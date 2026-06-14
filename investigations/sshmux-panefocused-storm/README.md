@@ -4,6 +4,10 @@
 **Status:** Root-caused, live incident resolved, **reproduced deterministically, and PR #7763 verified to fix it.**
 **WezTerm build (Mac GUI + Linux mux `desktop-linux`):** `20260117-154428-05343b38`
 
+> **See [`DIAGRAMS.md`](DIAGRAMS.md)** for client↔server sequence diagrams of the
+> notification flow (before vs after the fix), covering the steady-state echo/double loop
+> and the domain-detach `pane N not found` storm.
+
 ## Symptom
 
 On connecting to the SSHMUX domain, the WezTerm GUI rapidly oscillates the active
