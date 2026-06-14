@@ -226,12 +226,10 @@ impl ClientPane {
                 // it here.
                 log::trace!("advised of remote pane focus: {pane_id}");
 
-                // Match the server's focus state before applying it locally.
-                // `focus_pane_and_containing_tab` calls through to
-                // `focus_changed(true)`, and for remote panes that normally
-                // advises the server of the new focus. Without this guard, a
-                // server-originated focus notification can be echoed back as a
-                // fresh `SetFocusedPane` request.
+                // Mark the pane focused on the server side before reconciling:
+                // `focus_pane_and_containing_tab` calls `focus_changed(true)`,
+                // which would otherwise echo this back as a fresh `SetFocusedPane`.
+                // See <https://github.com/wezterm/wezterm/issues/4390>
                 {
                     let mut focused = self.client.focused_remote_pane_id.lock().unwrap();
                     *focused = Some(pane_id);

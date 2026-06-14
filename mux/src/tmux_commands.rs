@@ -341,6 +341,9 @@ impl TmuxDomainState {
 
                     match mux.get_tab(local_tab.tab_id) {
                         Some(tab) => {
+                            // We fire our own PaneFocused on the next line;
+                            // suppress the duplicate advise_focus_change would emit.
+                            // See <https://github.com/wezterm/wezterm/issues/4390>
                             tab.set_active_pane_with_notify(&local_pane, NotifyMux::No);
                             mux.notify(MuxNotification::PaneFocused(local_pane.pane_id()));
                         }

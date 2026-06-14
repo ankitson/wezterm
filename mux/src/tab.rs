@@ -704,12 +704,17 @@ impl Tab {
         self.inner.lock().get_active_idx()
     }
 
+    /// Activate `pane` and broadcast a `PaneFocused` mux notification.
+    /// Use this for genuine, user-initiated activations. Call sites that emit
+    /// their own `PaneFocused` should use [`Tab::set_active_pane_with_notify`]
+    /// with [`NotifyMux::No`] to avoid doubling it.
+    /// See <https://github.com/wezterm/wezterm/issues/4390>
     pub fn set_active_pane(&self, pane: &Arc<dyn Pane>) {
         self.set_active_pane_with_notify(pane, NotifyMux::Yes)
     }
 
-    pub fn set_active_pane_with_notify(&self, pane: &Arc<dyn Pane>, notify: NotifyMux) {
-        self.inner.lock().set_active_pane(pane, notify)
+    pub fn set_active_pane_with_notify(&self, pane: &Arc<dyn Pane>, notify_mux: NotifyMux) {
+        self.inner.lock().set_active_pane(pane, notify_mux)
     }
 
     pub fn set_active_idx(&self, pane_index: usize) {
@@ -1757,7 +1762,7 @@ impl TabInner {
         self.active
     }
 
-    fn set_active_pane(&mut self, pane: &Arc<dyn Pane>, notify: NotifyMux) {
+    fn set_active_pane(&mut self, pane: &Arc<dyn Pane>, notify_mux: NotifyMux) {
         let prior = self.get_active_pane();
 
         if is_pane(pane, &prior.as_ref()) {
@@ -1778,24 +1783,24 @@ impl TabInner {
         {
             self.active = item.index;
             self.recency.tag(item.index);
-            self.advise_focus_change(prior, notify);
+            self.advise_focus_change(prior, notify_mux);
         }
     }
 
-    fn advise_focus_change(&mut self, prior: Option<Arc<dyn Pane>>, notify: NotifyMux) {
+    fn advise_focus_change(&mut self, prior: Option<Arc<dyn Pane>>, notify_mux: NotifyMux) {
         let mux = Mux::get();
         let current = self.get_active_pane();
         match (prior, current) {
             (Some(prior), Some(current)) if prior.pane_id() != current.pane_id() => {
                 prior.focus_changed(false);
                 current.focus_changed(true);
-                if notify == NotifyMux::Yes {
+                if notify_mux == NotifyMux::Yes {
                     mux.notify(MuxNotification::PaneFocused(current.pane_id()));
                 }
             }
             (None, Some(current)) => {
                 current.focus_changed(true);
-                if notify == NotifyMux::Yes {
+                if notify_mux == NotifyMux::Yes {
                     mux.notify(MuxNotification::PaneFocused(current.pane_id()));
                 }
             }
@@ -2544,15 +2549,18 @@ mod test {
         let mux = Arc::new(Mux::new(None));
         Mux::set_mux(&mux);
 
-        let notifications = Arc::new(Mutex::new(Vec::new()));
-        let seen = Arc::clone(&notifications);
+        // Record every PaneFocused the mux broadcasts. `recorded` is the clone
+        // moved into the subscriber; `notified_panes` is read by the assertion.
+        let notified_panes = Arc::new(Mutex::new(Vec::new()));
+        let recorded = Arc::clone(&notified_panes);
         mux.subscribe(move |notification| {
             if let MuxNotification::PaneFocused(pane_id) = notification {
-                seen.lock().push(pane_id);
+                recorded.lock().push(pane_id);
             }
             true
         });
 
+        // Build a tab with two side-by-side panes (pane 2 becomes active on split).
         let tab = Tab::new(&size);
         let pane_1 = FakePane::new(1, size);
         tab.assign_pane(&pane_1);
@@ -2568,11 +2576,13 @@ mod test {
             .unwrap();
         tab.split_and_insert(0, SplitRequest::default(), Arc::clone(&pane_2))
             .unwrap();
-
         pane_1.resize(split.first).unwrap();
+
+        // Act: switch the active pane back to pane 1, requesting NO mux notification.
         tab.set_active_pane_with_notify(&pane_1, NotifyMux::No);
 
-        assert_eq!(Vec::<PaneId>::new(), *notifications.lock());
+        // Assert: the active pane changed, but not a single PaneFocused was emitted.
+        assert_eq!(Vec::<PaneId>::new(), *notified_panes.lock());
         assert_eq!(1, tab.get_active_pane().unwrap().pane_id());
 
         Mux::shutdown();

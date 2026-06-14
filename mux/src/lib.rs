@@ -559,6 +559,9 @@ impl Mux {
             .get_tab(tab_id)
             .ok_or_else(|| anyhow::anyhow!("tab {tab_id} not found"))?;
 
+        // Reconcile local focus to a change already decided elsewhere; must not
+        // emit PaneFocused, or we'd re-broadcast (and, for client panes, echo it
+        // back to the server). See <https://github.com/wezterm/wezterm/issues/4390>
         tab.set_active_pane_with_notify(&pane, NotifyMux::No);
 
         Ok(())
