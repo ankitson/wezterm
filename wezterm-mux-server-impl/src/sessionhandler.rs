@@ -358,6 +358,9 @@ impl SessionHandler {
                             let tab = mux
                                 .get_tab(tab_id)
                                 .ok_or_else(|| anyhow::anyhow!("tab {tab_id} not found"))?;
+                            // We emit our own PaneFocused below; suppress the
+                            // duplicate advise_focus_change would emit.
+                            // See <https://github.com/wezterm/wezterm/issues/4390>
                             tab.set_active_pane_with_notify(&pane, NotifyMux::No);
 
                             mux.record_focus_for_current_identity(pane_id);
