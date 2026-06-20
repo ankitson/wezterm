@@ -2197,6 +2197,22 @@ impl TermWindow {
 
             drop(window);
 
+            // Re-fit the newly-activated tab to the window. Unlike local tabs
+            // (which apply_dimensions keeps sized to the window on every resize),
+            // a mux/client tab can carry an independent, stale size — set by the
+            // server, another attached client, a detach/reattach, or `cli spawn`.
+            // Without this, activating such a tab leaves it mis-sized until the
+            // next OS resize event nudges apply_dimensions.
+            // Only resize when the grid actually differs, so a normal tab switch
+            // doesn't emit a redundant Resize PDU / TabResized notification.
+            // See https://github.com/wezterm/wezterm/issues/5117
+            if let Some(tab) = mux.get_active_tab_for_window(self.mux_window_id) {
+                let cur = tab.get_size();
+                if cur.rows != self.terminal_size.rows || cur.cols != self.terminal_size.cols {
+                    tab.resize(self.terminal_size);
+                }
+            }
+
             if let Some(tab) = self.get_active_pane_or_overlay() {
                 tab.focus_changed(true);
             }

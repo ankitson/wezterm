@@ -390,6 +390,7 @@ fn adjust_x_size(tree: &mut Tree, mut x_adjust: isize, cell_dimensions: &Termina
                     }
                     SplitDirection::Horizontal => {
                         // x_adjust is negative
+                        let remaining = x_adjust;
                         if data.first.cols > 1 {
                             adjust_x_size(&mut *left, -1, cell_dimensions);
                             data.first.cols -= 1;
@@ -403,6 +404,11 @@ fn adjust_x_size(tree: &mut Tree, mut x_adjust: isize, cell_dimensions: &Termina
                             data.second.pixel_width =
                                 data.second.cols.saturating_mul(cell_dimensions.pixel_width);
                             x_adjust += 1;
+                        }
+                        if x_adjust == remaining {
+                            // No pane can shrink any further; stop rather than
+                            // looping forever. <https://github.com/wezterm/wezterm/issues/7765>
+                            return;
                         }
                     }
                 }
@@ -461,6 +467,7 @@ fn adjust_y_size(tree: &mut Tree, mut y_adjust: isize, cell_dimensions: &Termina
                     }
                     SplitDirection::Vertical => {
                         // y_adjust is negative
+                        let remaining = y_adjust;
                         if data.first.rows > 1 {
                             adjust_y_size(&mut *left, -1, cell_dimensions);
                             data.first.rows -= 1;
@@ -476,6 +483,11 @@ fn adjust_y_size(tree: &mut Tree, mut y_adjust: isize, cell_dimensions: &Termina
                                 .rows
                                 .saturating_mul(cell_dimensions.pixel_height);
                             y_adjust += 1;
+                        }
+                        if y_adjust == remaining {
+                            // No pane can shrink any further; stop rather than
+                            // looping forever. <https://github.com/wezterm/wezterm/issues/7765>
+                            return;
                         }
                     }
                 }
@@ -2585,5 +2597,52 @@ mod test {
     #[test]
     fn tab_is_send_and_sync() {
         assert!(is_send_and_sync::<Tab>());
+    }
+
+    /// adjust_y_size must terminate even when the requested shrink cannot
+    /// be satisfied because every pane is already at its minimum height.
+    /// <https://github.com/wezterm/wezterm/issues/7765>
+    #[test]
+    fn adjust_y_size_terminates_when_tree_cannot_shrink() {
+        let min = TerminalSize {
+            rows: 1,
+            cols: 80,
+            pixel_width: 800,
+            pixel_height: 25,
+            dpi: 96,
+        };
+        let mut tree = Tree::Node {
+            left: Box::new(Tree::Leaf(FakePane::new(1, min))),
+            right: Box::new(Tree::Leaf(FakePane::new(2, min))),
+            data: Some(SplitDirectionAndSize {
+                direction: SplitDirection::Vertical,
+                first: min,
+                second: min,
+            }),
+        };
+        adjust_y_size(&mut tree, -5, &cell_dimensions(&min));
+    }
+
+    /// Horizontal counterpart of
+    /// adjust_y_size_terminates_when_tree_cannot_shrink.
+    #[test]
+    fn adjust_x_size_terminates_when_tree_cannot_shrink() {
+        let min = TerminalSize {
+            rows: 24,
+            cols: 1,
+            pixel_width: 10,
+            pixel_height: 600,
+            dpi: 96,
+        };
+        let mut tree = Tree::Node {
+            left: Box::new(Tree::Leaf(FakePane::new(1, min))),
+            right: Box::new(Tree::Leaf(FakePane::new(2, min))),
+            data: Some(SplitDirectionAndSize {
+                direction: SplitDirection::Horizontal,
+                first: min,
+                second: min,
+            }),
+        };
+        adjust_x_size(&mut tree, -5, &cell_dimensions(&min));
     }
 }
