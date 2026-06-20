@@ -33,7 +33,7 @@ closed feedback loop with 2x amplification per round. One user action seeds it, 
 runs on its own with no further input until a core is pinned.
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'background':'#ffffff','primaryColor':'#f6f8fa','primaryTextColor':'#24292f','primaryBorderColor':'#24292f','lineColor':'#24292f','actorBkg':'#f6f8fa','actorBorder':'#24292f','actorTextColor':'#24292f','signalColor':'#24292f','signalTextColor':'#24292f','noteBkgColor':'#fff8c5','noteTextColor':'#24292f','noteBorderColor':'#d4a72c','loopTextColor':'#24292f','labelBoxBkgColor':'#f6f8fa','labelTextColor':'#24292f','sequenceNumberColor':'#ffffff'}}}%%
+%%{init: {'theme':'base','themeVariables':{'background':'#0d1117','primaryColor':'#21262d','primaryTextColor':'#e6edf3','primaryBorderColor':'#58a6ff','lineColor':'#c9d1d9','actorBkg':'#21262d','actorBorder':'#58a6ff','actorTextColor':'#e6edf3','signalColor':'#c9d1d9','signalTextColor':'#e6edf3','noteBkgColor':'#373e47','noteTextColor':'#e6edf3','noteBorderColor':'#8b949e','loopTextColor':'#e6edf3','labelBoxBkgColor':'#21262d','labelTextColor':'#e6edf3','sequenceNumberColor':'#0d1117'}}}%%
 sequenceDiagram
     autonumber
     actor U as User
@@ -70,7 +70,7 @@ notifications for those now-destroyed ids are already queued. With no existence 
 (P1), each spawns a doomed reconcile task.
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'background':'#ffffff','primaryColor':'#f6f8fa','primaryTextColor':'#24292f','primaryBorderColor':'#24292f','lineColor':'#24292f','actorBkg':'#f6f8fa','actorBorder':'#24292f','actorTextColor':'#24292f','signalColor':'#24292f','signalTextColor':'#24292f','noteBkgColor':'#fff8c5','noteTextColor':'#24292f','noteBorderColor':'#d4a72c','loopTextColor':'#24292f','labelBoxBkgColor':'#f6f8fa','labelTextColor':'#24292f','sequenceNumberColor':'#ffffff'}}}%%
+%%{init: {'theme':'base','themeVariables':{'background':'#0d1117','primaryColor':'#21262d','primaryTextColor':'#e6edf3','primaryBorderColor':'#58a6ff','lineColor':'#c9d1d9','actorBkg':'#21262d','actorBorder':'#58a6ff','actorTextColor':'#e6edf3','signalColor':'#c9d1d9','signalTextColor':'#e6edf3','noteBkgColor':'#373e47','noteTextColor':'#e6edf3','noteBorderColor':'#8b949e','loopTextColor':'#e6edf3','labelBoxBkgColor':'#21262d','labelTextColor':'#e6edf3','sequenceNumberColor':'#0d1117'}}}%%
 sequenceDiagram
     autonumber
     participant S as MUX
@@ -95,7 +95,7 @@ sequenceDiagram
 ## AFTER — clean focus change (loop broken at both ends)
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'background':'#ffffff','primaryColor':'#f6f8fa','primaryTextColor':'#24292f','primaryBorderColor':'#24292f','lineColor':'#24292f','actorBkg':'#f6f8fa','actorBorder':'#24292f','actorTextColor':'#24292f','signalColor':'#24292f','signalTextColor':'#24292f','noteBkgColor':'#fff8c5','noteTextColor':'#24292f','noteBorderColor':'#d4a72c','loopTextColor':'#24292f','labelBoxBkgColor':'#f6f8fa','labelTextColor':'#24292f','sequenceNumberColor':'#ffffff'}}}%%
+%%{init: {'theme':'base','themeVariables':{'background':'#0d1117','primaryColor':'#21262d','primaryTextColor':'#e6edf3','primaryBorderColor':'#58a6ff','lineColor':'#c9d1d9','actorBkg':'#21262d','actorBorder':'#58a6ff','actorTextColor':'#e6edf3','signalColor':'#c9d1d9','signalTextColor':'#e6edf3','noteBkgColor':'#373e47','noteTextColor':'#e6edf3','noteBorderColor':'#8b949e','loopTextColor':'#e6edf3','labelBoxBkgColor':'#21262d','labelTextColor':'#e6edf3','sequenceNumberColor':'#0d1117'}}}%%
 sequenceDiagram
     autonumber
     actor U as User
@@ -105,14 +105,14 @@ sequenceDiagram
     U->>G: switch focus to pane B
     G->>G: ClientPane B focus_changed true
     G->>S: SetFocusedPane B
-    rect rgb(230,255,236)
+    rect rgb(28,68,42)
     Note over S: P2 fix
     S->>S: set_active_pane_with_notify B NotifyMux No
     Note over S: advise_focus_change is suppressed, no notify
     S->>S: call site fires PaneFocused B exactly once
     S-->>G: PaneFocused B single
     end
-    rect rgb(230,255,236)
+    rect rgb(28,68,42)
     Note over G: P1 fix get_pane B is_some true, so spawn one task
     Note over G: P3 fix preset focused_remote_pane_id to B
     G->>G: focus_pane_and_containing_tab B then focus_changed true
@@ -124,7 +124,7 @@ sequenceDiagram
 ## AFTER — domain detach (stale notifications dropped)
 
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'background':'#ffffff','primaryColor':'#f6f8fa','primaryTextColor':'#24292f','primaryBorderColor':'#24292f','lineColor':'#24292f','actorBkg':'#f6f8fa','actorBorder':'#24292f','actorTextColor':'#24292f','signalColor':'#24292f','signalTextColor':'#24292f','noteBkgColor':'#fff8c5','noteTextColor':'#24292f','noteBorderColor':'#d4a72c','loopTextColor':'#24292f','labelBoxBkgColor':'#f6f8fa','labelTextColor':'#24292f','sequenceNumberColor':'#ffffff'}}}%%
+%%{init: {'theme':'base','themeVariables':{'background':'#0d1117','primaryColor':'#21262d','primaryTextColor':'#e6edf3','primaryBorderColor':'#58a6ff','lineColor':'#c9d1d9','actorBkg':'#21262d','actorBorder':'#58a6ff','actorTextColor':'#e6edf3','signalColor':'#c9d1d9','signalTextColor':'#e6edf3','noteBkgColor':'#373e47','noteTextColor':'#e6edf3','noteBorderColor':'#8b949e','loopTextColor':'#e6edf3','labelBoxBkgColor':'#21262d','labelTextColor':'#e6edf3','sequenceNumberColor':'#0d1117'}}}%%
 sequenceDiagram
     autonumber
     participant S as MUX
@@ -134,7 +134,7 @@ sequenceDiagram
     S-->>G: in-flight PaneFocused 46
     S-->>G: in-flight PaneFocused 47
     G->>G: tear down panes, 46 and 47 destroyed
-    rect rgb(230,255,236)
+    rect rgb(28,68,42)
     Note over G: P1 fix existence check before spawning
     G->>G: get_pane 46 is_some false, so drop, no task
     G->>G: get_pane 47 is_some false, so drop, no task
