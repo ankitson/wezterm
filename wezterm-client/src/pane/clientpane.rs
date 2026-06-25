@@ -226,17 +226,24 @@ impl ClientPane {
                 // it here.
                 log::trace!("advised of remote pane focus: {pane_id}");
 
-                // Mark the pane focused on the server side before reconciling:
+                let mux = Mux::get();
+                // Mark only this reconciliation as server-originated:
                 // `focus_pane_and_containing_tab` calls `focus_changed(true)`,
                 // which would otherwise echo this back as a fresh `SetFocusedPane`.
                 // See <https://github.com/wezterm/wezterm/issues/4390>
-                {
-                    let mut focused = self.client.focused_remote_pane_id.lock().unwrap();
-                    *focused = Some(pane_id);
-                }
+                self.client
+                    .reconciling_remote_pane_ids
+                    .lock()
+                    .unwrap()
+                    .insert(pane_id);
+                let result = mux.focus_pane_and_containing_tab(self.local_pane_id);
+                self.client
+                    .reconciling_remote_pane_ids
+                    .lock()
+                    .unwrap()
+                    .remove(&pane_id);
 
-                let mux = Mux::get();
-                if let Err(err) = mux.focus_pane_and_containing_tab(self.local_pane_id) {
+                if let Err(err) = result {
                     log::error!("Error reconciling remote PaneFocused notification: {err:#}");
                 }
             }
@@ -589,6 +596,15 @@ impl Pane for ClientPane {
         let mut focused_pane = self.client.focused_remote_pane_id.lock().unwrap();
         if *focused_pane != Some(self.remote_pane_id) {
             focused_pane.replace(self.remote_pane_id);
+            if self
+                .client
+                .reconciling_remote_pane_ids
+                .lock()
+                .unwrap()
+                .contains(&self.remote_pane_id)
+            {
+                return;
+            }
             let client = Arc::clone(&self.client);
             let remote_pane_id = self.remote_pane_id;
             promise::spawn::spawn(async move {

@@ -532,6 +532,16 @@ impl Mux {
         }
     }
 
+    fn record_focus_for_all_clients_metadata_only(&self, pane_id: PaneId) {
+        if self.get_pane(pane_id).is_none() {
+            return;
+        }
+
+        for info in self.clients.write().values_mut() {
+            info.update_focused_pane(pane_id);
+        }
+    }
+
     /// Called by PaneFocused event handlers to reconcile a remote
     /// pane focus event and apply its effects locally
     pub fn focus_pane_and_containing_tab(&self, pane_id: PaneId) -> anyhow::Result<()> {
@@ -703,6 +713,10 @@ impl Mux {
     }
 
     pub fn notify(&self, notification: MuxNotification) {
+        if let MuxNotification::PaneFocused(pane_id) = notification {
+            self.record_focus_for_all_clients_metadata_only(pane_id);
+        }
+
         let mut subscribers = self.subscribers.write();
         subscribers.retain(|_, notify| notify(notification.clone()));
     }

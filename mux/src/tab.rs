@@ -2217,6 +2217,7 @@ impl Into<String> for SerdeUrl {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::client::ClientId;
     use crate::renderable::*;
     use parking_lot::{MappedMutexGuard, Mutex};
     use rangeset::RangeSet;
@@ -2646,6 +2647,43 @@ mod test {
         // Assert: the active pane changed and exactly one PaneFocused was emitted.
         assert_eq!(vec![1], *notified_panes.lock());
         assert_eq!(1, tab.get_active_pane().unwrap().pane_id());
+
+        Mux::shutdown();
+    }
+
+    #[test]
+    fn panefocused_notify_updates_client_focus_metadata() {
+        let _guard = MUX_TEST_GUARD.lock();
+        let size = TerminalSize {
+            rows: 24,
+            cols: 80,
+            pixel_width: 800,
+            pixel_height: 600,
+            dpi: 96,
+        };
+
+        let mux = Arc::new(Mux::new(None));
+        Mux::set_mux(&mux);
+
+        let prior_pane = FakePane::new(1, size);
+        let focused_pane = FakePane::new(2, size);
+        mux.add_pane(&prior_pane).unwrap();
+        mux.add_pane(&focused_pane).unwrap();
+
+        let client_a = Arc::new(ClientId::new());
+        let client_b = Arc::new(ClientId::new());
+        mux.register_client(Arc::clone(&client_a));
+        mux.register_client(Arc::clone(&client_b));
+        mux.record_focus_for_client(&client_a, prior_pane.pane_id());
+        mux.record_focus_for_client(&client_b, prior_pane.pane_id());
+
+        mux.notify(MuxNotification::PaneFocused(focused_pane.pane_id()));
+
+        let clients = mux.iter_clients();
+        assert_eq!(2, clients.len());
+        for client in clients {
+            assert_eq!(Some(focused_pane.pane_id()), client.focused_pane_id);
+        }
 
         Mux::shutdown();
     }
